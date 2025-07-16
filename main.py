@@ -13,16 +13,18 @@ def typewriter_effect(text, speed=0.001):
     print()
 
 def thinking_animation():
-    """Animated thinking indicator with continuous dots"""
+    """Simple spinner animation"""
     thinking = True
+    start_time = time.time()
+    spinner_frames = ["|", "/", "-", "\\"]
     
     def animate():
-        sys.stdout.write("💭 HELIOS: thinking")
-        sys.stdout.flush()
+        i = 0
         while thinking:
-            sys.stdout.write(".")
+            sys.stdout.write(f"\rthinking {spinner_frames[i % len(spinner_frames)]}")
             sys.stdout.flush()
-            time.sleep(0.2)
+            time.sleep(0.1)
+            i += 1
     
     thread = threading.Thread(target=animate)
     thread.daemon = True
@@ -31,7 +33,9 @@ def thinking_animation():
     def stop():
         nonlocal thinking
         thinking = False
-        # No need to clear, just continue on the same line
+        elapsed = time.time() - start_time
+        sys.stdout.write(f"\rthought for {elapsed:.1f} seconds\n\n")
+        sys.stdout.flush() 
     
     return stop
 
@@ -70,8 +74,11 @@ def get_ollama_response(user_input):
         # Start thinking animation
         stop_thinking = thinking_animation()
         
+        # Add prompt to keep responses short
+        prompt = f"{user_input}\n\nPlease keep your response brief and concise."
+        
         result = subprocess.run(
-            ["ollama", "run", "llama3.2:1b", user_input],
+            ["ollama", "run", "llama3.2:1b", prompt],
             capture_output=True,
             text=True,
             encoding='utf-8',
@@ -119,7 +126,7 @@ def main():
             # Get AI response (animation will show automatically)
             response = get_ollama_response(user_input)
             
-            typewriter_effect(response)
+            typewriter_effect(response, speed=0.01)  # Fast typewriter
             print()  # Add spacing
             
         except KeyboardInterrupt:
